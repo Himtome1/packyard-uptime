@@ -57,6 +57,17 @@ export async function sendResend({ apiKey, from, to, subject, text, idempotencyK
   return JSON.parse(body).id;
 }
 
+export const DOWN_HELP = [
+  'What to do:',
+  '- Paste this subject line to @cto in #engineering (or forward this email). That is all that is needed.',
+  '- Ignore it if it is about your own canary server and you stopped that server on purpose.',
+  '- Ignore any email with [TEST] in it: that is a drill.',
+  '- A "[Packyard RECOVERED]" email follows when it clears; nothing to do then.',
+  '',
+  'You get one email per incident and one when it recovers. Runbook: engineering/uptime.md in the team workspace.',
+  '',
+].join('\n');
+
 export function formatMail(where, kind, items) {
   const lines = items.map((i) => kind === 'down'
     ? `- ${i.label}: ${i.detail} (failing since ${i.since}, ${i.fails} checks in a row)`
@@ -65,6 +76,6 @@ export function formatMail(where, kind, items) {
     ? `[Packyard DOWN] ${items.map((i) => i.label).join(', ').slice(0, 120)}`
     : `[Packyard RECOVERED] ${items.map((i) => i.label).join(', ').slice(0, 120)}`;
   const text = `${kind === 'down' ? 'Uptime check FAILED' : 'Uptime check recovered'} (${where}, ${new Date().toISOString()}):\n\n${lines.join('\n')}\n\n` +
-    (kind === 'down' ? 'You get one email per incident and one when it recovers. Runbook: engineering/uptime.md in the team workspace.\n' : '');
+    (kind === 'down' ? DOWN_HELP : '');
   return { subject, text };
 }
