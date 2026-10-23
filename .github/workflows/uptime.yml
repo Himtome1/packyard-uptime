@@ -1,0 +1,43 @@
+name: uptime
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_fail:
+        description: '[TEST] add a forced-fail canary check (drill only)'
+        type: boolean
+        default: false
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore incident state
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: uptime-state-${{ github.run_id }}
+          restore-keys: uptime-state-
+      - name: Check
+        run: mkdir -p state && node outside.mjs
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+          CANARY_HOST: ${{ secrets.CANARY_HOST }}
+          FORCE_FAIL_HOST: ${{ inputs.force_fail && secrets.FORCE_FAIL_HOST || '' }}
+      - name: Save incident state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: uptime-state-${{ github.run_id }}-${{ github.run_attempt }}
